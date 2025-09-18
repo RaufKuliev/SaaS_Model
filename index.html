@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Финансовый Калькулятор</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-chart-line text-blue-600"></i>
+                SaaS Финансовая Модель
+            </h1>
+            <p class="text-gray-600">Профессиональный калькулятор для анализа метрик SaaS бизнеса</p>
+        </header>
+
+        <!-- Input Form -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                <i class="fas fa-cogs text-blue-600"></i>
+                Входные параметры
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-users"></i> Начальное количество пользователей
+                    </label>
+                    <input type="number" id="initialUsers" value="100" min="0" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-dollar-sign"></i> Цена подписки (руб/мес)
+                    </label>
+                    <input type="number" id="subscriptionPrice" value="1000" min="0" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-chart-line"></i> Рост пользователей (%/мес)
+                    </label>
+                    <input type="number" id="growthRate" value="10" min="0" max="100" step="0.1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user-slash"></i> Churn Rate (%/мес)
+                    </label>
+                    <input type="number" id="churnRate" value="5" min="0" max="100" step="0.1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-bullhorn"></i> CAC (руб/клиент)
+                    </label>
+                    <input type="number" id="cac" value="500" min="0" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-rocket"></i> Стартовые расходы (руб)
+                    </label>
+                    <input type="number" id="startupCosts" value="500000" min="0" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-cog"></i> Операционные расходы (руб/мес)
+                    </label>
+                    <input type="number" id="operatingCosts" value="50000" min="0" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar"></i> Период прогноза (месяцев)
+                    </label>
+                    <input type="number" id="forecastPeriod" value="12" min="1" max="60" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <button onclick="calculateModel()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200">
+                    <i class="fas fa-calculator"></i> Рассчитать модель
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Dashboard -->
+        <div id="results" class="hidden">
+            <!-- Key Metrics -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                    <i class="fas fa-tachometer-alt text-green-600"></i>
+                    Ключевые показатели
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-blue-600">MRR</p>
+                                <p class="text-2xl font-bold text-blue-800" id="mrrValue">0</p>
+                            </div>
+                            <i class="fas fa-calendar-alt text-blue-400 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-green-600">ARR</p>
+                                <p class="text-2xl font-bold text-green-800" id="arrValue">0</p>
+                            </div>
+                            <i class="fas fa-chart-line text-green-400 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-purple-600">LTV</p>
+                                <p class="text-2xl font-bold text-purple-800" id="ltvValue">0</p>
+                            </div>
+                            <i class="fas fa-heart text-purple-400 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-orange-50 p-4 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-orange-600">LTV/CAC</p>
+                                <p class="text-2xl font-bold text-orange-800" id="ltvCacValue">0</p>
+                            </div>
+                            <i class="fas fa-balance-scale text-orange-400 text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-users text-blue-600"></i>
+                        Рост пользователей
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="usersChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-money-bill-wave text-green-600"></i>
+                        Накопленный денежный поток
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="cashFlowChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-bar text-purple-600"></i>
+                        Доходы vs Расходы
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="revenueExpensesChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-area text-indigo-600"></i>
+                        Метрики эффективности
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="metricsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-file-invoice-dollar text-green-600"></i>
+                    Финансовая сводка
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Точка безубыточности</p>
+                        <p class="text-xl font-bold text-gray-800" id="breakEvenMonth">-</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Общая прибыль за период</p>
+                        <p class="text-xl font-bold text-gray-800" id="totalProfit">-</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">Пользователи в конце периода</p>
+                        <p class="text-xl font-bold text-gray-800" id="finalUsers">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartsInitialized = false;
+        let usersChart, cashFlowChart, revenueExpensesChart, metricsChart;
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ru-RU', {
+                style: 'currency',
+                currency: 'RUB',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ru-RU').format(Math.round(num));
+        }
+
+        function calculateModel() {
+            // Get input values
+            const initialUsers = parseFloat(document.getElementById('initialUsers').value) || 0;
+            const subscriptionPrice = parseFloat(document.getElementById('subscriptionPrice').value) || 0;
+            const growthRate = parseFloat(document.getElementById('growthRate').value) / 100 || 0;
+            const churnRate = parseFloat(document.getElementById('churnRate').value) / 100 || 0;
+            const cac = parseFloat(document.getElementById('cac').value) || 0;
+            const startupCosts = parseFloat(document.getElementById('startupCosts').value) || 0;
+            const operatingCosts = parseFloat(document.getElementById('operatingCosts').value) || 0;
+            const forecastPeriod = parseInt(document.getElementById('forecastPeriod').value) || 12;
+
+            // Validate inputs
+            if (initialUsers <= 0 || subscriptionPrice <= 0 || forecastPeriod <= 0) {
+                alert('Пожалуйста, введите корректные значения для всех полей');
+                return;
+            }
+
+            // Calculate monthly projections
+            const months = [];
+            const users = [];
+            const revenues = [];
+            const expenses = [];
+            const cashFlow = [];
+            const cumulativeCashFlow = [];
+
+            let currentUsers = initialUsers;
+            let cumulativeCash = -startupCosts; // Start with negative startup costs
+
+            for (let month = 1; month <= forecastPeriod; month++) {
+                months.push(`Месяц ${month}`);
+
+                // Calculate net user growth (growth - churn)
+                const newUsers = currentUsers * growthRate;
+                const churnedUsers = currentUsers * churnRate;
+                currentUsers = currentUsers + newUsers - churnedUsers;
+
+                users.push(Math.round(currentUsers));
+
+                // Calculate revenues and expenses
+                const monthlyRevenue = currentUsers * subscriptionPrice;
+                const monthlyExpenses = operatingCosts + (newUsers * cac); // OpEx + acquisition costs
+
+                revenues.push(monthlyRevenue);
+                expenses.push(monthlyExpenses);
+
+                // Calculate cash flow
+                const monthlyCashFlow = monthlyRevenue - monthlyExpenses;
+                cashFlow.push(monthlyCashFlow);
+                cumulativeCash += monthlyCashFlow;
+                cumulativeCashFlow.push(cumulativeCash);
+            }
+
+            // Calculate key metrics
+            const currentMRR = users[users.length - 1] * subscriptionPrice;
+            const arr = currentMRR * 12;
+            const avgLifetime = churnRate > 0 ? 1 / churnRate : 60; // months
+            const ltv = subscriptionPrice * avgLifetime;
+            const ltvCacRatio = cac > 0 ? ltv / cac : 0;
+
+            // Find break-even point
+            let breakEvenMonth = 'Не достигнута';
+            for (let i = 0; i < cumulativeCashFlow.length; i++) {
+                if (cumulativeCashFlow[i] > 0) {
+                    breakEvenMonth = `Месяц ${i + 1}`;
+                    break;
+                }
+            }
+
+            // Update metrics display
+            document.getElementById('mrrValue').textContent = formatCurrency(currentMRR);
+            document.getElementById('arrValue').textContent = formatCurrency(arr);
+            document.getElementById('ltvValue').textContent = formatCurrency(ltv);
+            document.getElementById('ltvCacValue').textContent = ltvCacRatio.toFixed(1);
+            document.getElementById('breakEvenMonth').textContent = breakEvenMonth;
+            document.getElementById('totalProfit').textContent = formatCurrency(cumulativeCashFlow[cumulativeCashFlow.length - 1]);
+            document.getElementById('finalUsers').textContent = formatNumber(users[users.length - 1]);
+
+            // Show results
+            document.getElementById('results').classList.remove('hidden');
+
+            // Create or update charts
+            createCharts(months, users, revenues, expenses, cashFlow, cumulativeCashFlow, ltv, cac);
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createCharts(months, users, revenues, expenses, cashFlow, cumulativeCashFlow, ltv, cac) {
+            // Destroy existing charts
+            if (chartsInitialized) {
+                usersChart.destroy();
+                cashFlowChart.destroy();
+                revenueExpensesChart.destroy();
+                metricsChart.destroy();
+            }
+
+            // Users Growth Chart
+            const usersCtx = document.getElementById('usersChart').getContext('2d');
+            usersChart = new Chart(usersCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Количество пользователей',
+                        data: users,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Пользователи'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Cash Flow Chart
+            const cashFlowCtx = document.getElementById('cashFlowChart').getContext('2d');
+            cashFlowChart = new Chart(cashFlowCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Накопленный денежный поток',
+                        data: cumulativeCashFlow,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Рубли'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Денежный поток: ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Revenue vs Expenses Chart
+            const revenueExpensesCtx = document.getElementById('revenueExpensesChart').getContext('2d');
+            revenueExpensesChart = new Chart(revenueExpensesCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Доходы',
+                            data: revenues,
+                            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                        },
+                        {
+                            label: 'Расходы',
+                            data: expenses,
+                            backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Рубли'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Metrics Chart
+            const metricsCtx = document.getElementById('metricsChart').getContext('2d');
+            const ltvData = new Array(months.length).fill(ltv);
+            const cacData = new Array(months.length).fill(cac);
+
+            metricsChart = new Chart(metricsCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'LTV',
+                            data: ltvData,
+                            borderColor: 'rgb(147, 51, 234)',
+                            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'CAC',
+                            data: cacData,
+                            borderColor: 'rgb(249, 115, 22)',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Рубли'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            chartsInitialized = true;
+        }
+
+        // Add input event listeners for real-time validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.value < 0) {
+                        this.value = 0;
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
